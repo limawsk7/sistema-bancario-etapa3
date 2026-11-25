@@ -3,6 +3,7 @@
 #include <fstream>
 #include <sstream>
 #include <iomanip>
+#include <cstdlib>
 using namespace std;
 
 // dados das contas
@@ -22,6 +23,60 @@ char tipoMovimentacao[MAX_MOVIMENTACOES];
 double valorMovimentacao[MAX_MOVIMENTACOES];
 int quantidadeMovimentacoes = 0;
 
+// le um numero inteiro do teclado, devolve -1 se digitar algo invalido
+int lerInt() {
+    string texto;
+    if (!getline(cin, texto)) {
+        // acabou a entrada (ctrl+z / ctrl+d), sai pra nao ficar em loop
+        exit(0);
+    }
+    try {
+        size_t pos;
+        int n = stoi(texto, &pos);
+        if (texto.find_first_not_of(" \t", pos) != string::npos) {
+            return -1;
+        }
+        return n;
+    } catch (...) {
+        return -1;
+    }
+}
+
+// le um valor decimal do teclado (aceita virgula ou ponto), devolve -1 se for invalido
+double lerDouble() {
+    string texto;
+    if (!getline(cin, texto)) {
+        exit(0);
+    }
+    for (int i = 0; i < (int)texto.size(); i++) {
+        if (texto[i] == ',') {
+            texto[i] = '.';
+        }
+    }
+    try {
+        size_t pos;
+        double d = stod(texto, &pos);
+        if (texto.find_first_not_of(" \t", pos) != string::npos) {
+            return -1;
+        }
+        return d;
+    } catch (...) {
+        return -1;
+    }
+}
+
+// tira o \r do fim da linha (arquivos do windows) e o BOM do comeco
+string limparLinha(string linha) {
+    if (linha.size() >= 3 && (unsigned char)linha[0] == 0xEF &&
+        (unsigned char)linha[1] == 0xBB && (unsigned char)linha[2] == 0xBF) {
+        linha = linha.substr(3);
+    }
+    while (linha.size() > 0 && (linha[linha.size() - 1] == '\r' || linha[linha.size() - 1] == '\n')) {
+        linha = linha.substr(0, linha.size() - 1);
+    }
+    return linha;
+}
+
 // le o arquivo contas.txt e joga nos arrays
 void carregarContas() {
     ifstream arquivo("contas.txt");
@@ -32,29 +87,42 @@ void carregarContas() {
 
     string linha;
     while (getline(arquivo, linha) && quantidadeContas < MAX_CONTAS) {
+        linha = limparLinha(linha);
         if (linha == "") {
             continue;
         }
 
+        // separa os campos pelo ponto e virgula
         stringstream ss(linha);
+        string campos[6];
+        int total = 0;
         string campo;
+        while (total < 6 && getline(ss, campo, ';')) {
+            campos[total] = campo;
+            total++;
+        }
 
-        getline(ss, campo, ';');
-        numeroConta[quantidadeContas] = stoi(campo);
+        if (total != 6) {
+            cout << "aviso: linha invalida em contas.txt ignorada: " << linha << endl;
+            continue;
+        }
 
-        getline(ss, nomeCliente[quantidadeContas], ';');
-        getline(ss, cpf[quantidadeContas], ';');
+        try {
+            int numeroLido = stoi(campos[0]);
+            int tipoLido = stoi(campos[3]);
+            double saldoLido = stod(campos[4]);
+            int ativaLida = stoi(campos[5]);
 
-        getline(ss, campo, ';');
-        tipoConta[quantidadeContas] = stoi(campo);
-
-        getline(ss, campo, ';');
-        saldo[quantidadeContas] = stod(campo);
-
-        getline(ss, campo, ';');
-        contaAtiva[quantidadeContas] = (stoi(campo) == 1);
-
-        quantidadeContas++;
+            numeroConta[quantidadeContas] = numeroLido;
+            nomeCliente[quantidadeContas] = campos[1];
+            cpf[quantidadeContas] = campos[2];
+            tipoConta[quantidadeContas] = tipoLido;
+            saldo[quantidadeContas] = saldoLido;
+            contaAtiva[quantidadeContas] = (ativaLida == 1);
+            quantidadeContas++;
+        } catch (...) {
+            cout << "aviso: linha invalida em contas.txt ignorada: " << linha << endl;
+        }
     }
 
     arquivo.close();
@@ -90,23 +158,36 @@ void carregarMovimentacoes() {
 
     string linha;
     while (getline(arquivo, linha) && quantidadeMovimentacoes < MAX_MOVIMENTACOES) {
+        linha = limparLinha(linha);
         if (linha == "") {
             continue;
         }
 
         stringstream ss(linha);
+        string campos[3];
+        int total = 0;
         string campo;
+        while (total < 3 && getline(ss, campo, ';')) {
+            campos[total] = campo;
+            total++;
+        }
 
-        getline(ss, campo, ';');
-        contaMovimentacao[quantidadeMovimentacoes] = stoi(campo);
+        if (total != 3 || campos[1].size() != 1) {
+            cout << "aviso: linha invalida em movimentacoes.txt ignorada: " << linha << endl;
+            continue;
+        }
 
-        getline(ss, campo, ';');
-        tipoMovimentacao[quantidadeMovimentacoes] = campo[0];
+        try {
+            int contaLida = stoi(campos[0]);
+            double valorLido = stod(campos[2]);
 
-        getline(ss, campo, ';');
-        valorMovimentacao[quantidadeMovimentacoes] = stod(campo);
-
-        quantidadeMovimentacoes++;
+            contaMovimentacao[quantidadeMovimentacoes] = contaLida;
+            tipoMovimentacao[quantidadeMovimentacoes] = campos[1][0];
+            valorMovimentacao[quantidadeMovimentacoes] = valorLido;
+            quantidadeMovimentacoes++;
+        } catch (...) {
+            cout << "aviso: linha invalida em movimentacoes.txt ignorada: " << linha << endl;
+        }
     }
 
     arquivo.close();
@@ -152,7 +233,7 @@ int main() {
         cout << "7 - Extrato" << endl;
         cout << "8 - Sair" << endl;
         cout << "Opcao: ";
-        cin >> opcao;
+        opcao = lerInt();
 
         switch (opcao) {
 
@@ -163,10 +244,10 @@ int main() {
                 }
 
                 cout << "Numero da conta: ";
-                cin >> numero;
+                numero = lerInt();
                 while (numero <= 0) {
                     cout << "numero invalido, digite maior que zero: ";
-                    cin >> numero;
+                    numero = lerInt();
                 }
 
                 // ve se ja existe uma conta com esse numero
@@ -183,25 +264,32 @@ int main() {
 
                 numeroConta[quantidadeContas] = numero;
 
-                cin.ignore();
                 cout << "nome do titular: ";
                 getline(cin, nomeCliente[quantidadeContas]);
 
                 cout << "CPF: ";
                 getline(cin, cpf[quantidadeContas]);
 
+                // ponto e virgula e o separador do arquivo, entao tiro dos textos
+                for (int i = 0; i < (int)nomeCliente[quantidadeContas].size(); i++) {
+                    if (nomeCliente[quantidadeContas][i] == ';') nomeCliente[quantidadeContas][i] = ' ';
+                }
+                for (int i = 0; i < (int)cpf[quantidadeContas].size(); i++) {
+                    if (cpf[quantidadeContas][i] == ';') cpf[quantidadeContas][i] = ' ';
+                }
+
                 cout << "tipo da conta (1 = Corrente, 2 = Poupanca): ";
-                cin >> tipoConta[quantidadeContas];
+                tipoConta[quantidadeContas] = lerInt();
                 while (tipoConta[quantidadeContas] != 1 && tipoConta[quantidadeContas] != 2) {
                     cout << "tipo invalido, digite 1 ou 2: ";
-                    cin >> tipoConta[quantidadeContas];
+                    tipoConta[quantidadeContas] = lerInt();
                 }
 
                 cout << "saldo inicial: ";
-                cin >> saldo[quantidadeContas];
+                saldo[quantidadeContas] = lerDouble();
                 while (saldo[quantidadeContas] < 0) {
                     cout << "saldo nao pode ser negativo: ";
-                    cin >> saldo[quantidadeContas];
+                    saldo[quantidadeContas] = lerDouble();
                 }
 
                 contaAtiva[quantidadeContas] = true;
@@ -224,7 +312,7 @@ int main() {
 
             case 3: // consultar conta pelo numero
                 cout << "numero da conta: ";
-                cin >> numero;
+                numero = lerInt();
 
                 indice = -1;
                 for (int i = 0; i < quantidadeContas; i++) {
@@ -255,7 +343,7 @@ int main() {
 
             case 4: // deposito
                 cout << "numero da conta: ";
-                cin >> numero;
+                numero = lerInt();
 
                 indice = -1;
                 for (int i = 0; i < quantidadeContas; i++) {
@@ -272,7 +360,7 @@ int main() {
                     cout << "historico cheio." << endl;
                 } else {
                     cout << "valor do deposito: ";
-                    cin >> valor;
+                    valor = lerDouble();
                     if (valor <= 0) {
                         cout << "valor invalido." << endl;
                     } else {
@@ -290,7 +378,7 @@ int main() {
 
             case 5: // saque
                 cout << "numero da conta: ";
-                cin >> numero;
+                numero = lerInt();
 
                 indice = -1;
                 for (int i = 0; i < quantidadeContas; i++) {
@@ -307,7 +395,7 @@ int main() {
                     cout << "historico cheio." << endl;
                 } else {
                     cout << "valor do saque: ";
-                    cin >> valor;
+                    valor = lerDouble();
                     if (valor <= 0) {
                         cout << "valor invalido." << endl;
                     } else if (valor > saldo[indice]) {
@@ -327,7 +415,7 @@ int main() {
 
             case 6: // transferencia
                 cout << "numero da conta de origem: ";
-                cin >> numero;
+                numero = lerInt();
                 indiceOrigem = -1;
                 for (int i = 0; i < quantidadeContas; i++) {
                     if (numeroConta[i] == numero) {
@@ -336,7 +424,7 @@ int main() {
                 }
 
                 cout << "numero da conta de destino: ";
-                cin >> numero;
+                numero = lerInt();
                 indiceDestino = -1;
                 for (int i = 0; i < quantidadeContas; i++) {
                     if (numeroConta[i] == numero) {
@@ -354,7 +442,7 @@ int main() {
                     cout << "historico sem espaco." << endl;
                 } else {
                     cout << "valor da transferencia: ";
-                    cin >> valor;
+                    valor = lerDouble();
                     if (valor <= 0) {
                         cout << "valor invalido." << endl;
                     } else if (valor > saldo[indiceOrigem]) {
@@ -384,7 +472,7 @@ int main() {
 
             case 7: // extrato
                 cout << "numero da conta: ";
-                cin >> numero;
+                numero = lerInt();
 
                 indice = -1;
                 for (int i = 0; i < quantidadeContas; i++) {
