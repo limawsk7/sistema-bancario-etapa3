@@ -58,7 +58,7 @@ g++ banco.cpp -o banco
 ./banco
 ```
 
-##OBS
+## OBS
 não consegui rodar pelo onlinegdb, utilizei a aba Codespaces do github e ai sim deu certo,aparentemente o gdb nao estava guardando o contas.txt
 
 ## autor
