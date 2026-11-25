@@ -1,12 +1,12 @@
 # sistema de Registro e Gestão de Contas Bancárias - Etapa 3
 
-trabalho da disciplina INF101 - programação de Computadores I (UNIVIÇOSA).
+trabalho da disciplina INF101- programação de Computadores I (UNIVIÇOSA).
 
 ## sobre o projeto
 
-continuação da Etapa 2. agora os dados não se perdem mais quando o programa fecha, as contas e as movimentações são salvas em arquivos de texto e carregadas de novo quando o programa abre.
+continuação da Etapa 2, agora os dados não se perdem mais quando o programa fecha, as contas e as movimentações são salvas em arquivos de texto e carregadas de novo quando o programa abre.
 
-usei a biblioteca `fstream` (`ifstream`, `ofstream`, `is_open()`, `getline()` e `close()`). os arrays passaram a ser globais pra poder usar nas funções de leitura e gravação.
+usei  `fstream` (`ifstream`, `ofstream`, `is_open()`, `getline()` e `close()`). os arrays agr sao globais pra poder usar nas funções de leitura e gravação.
 
 ## arquivos
 
@@ -25,7 +25,7 @@ número;nome;cpf;tipo;saldo;situação (1 = ativa, 0 = inativa)
 1001;S;300.00
 ```
 
-número da conta;tipo (D = depósito, S = saque);valor
+numero da conta;tipo (D = depósito, S = saque);valor
 
 na transferência ficam dois registros: um `S` na origem e um `D` no destino.
 
@@ -57,6 +57,9 @@ o carregamento acontece no começo do `main()`. o salvamento acontece depois de 
 g++ banco.cpp -o banco
 ./banco
 ```
+
+##OBS
+não consegui rodar pelo onlinegdb, utilizei a aba Codespaces do github e ai sim deu certo,aparentemente o gdb nao estava guardando o contas.txt
 
 ## autor
 
